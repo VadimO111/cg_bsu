@@ -145,7 +145,7 @@ class ColorApp(QMainWindow):
         right.addStretch()
         root.addLayout(right, 1)
 
-        self.update_all_from_rgb(self.r, self.g, self.b)
+        self.update_from_rgb(self.r, self.g, self.b, source="RGB")
 
     def _make_group(self, title, fields):
         group = QGroupBox(title)
@@ -193,33 +193,36 @@ class ColorApp(QMainWindow):
         vals = {k: v.value() for k, v in self.vars.items()}
 
         if name in ("R", "G", "B"):
-            self.update_all_from_rgb(vals["R"], vals["G"], vals["B"])
+            self.update_from_rgb(vals["R"], vals["G"], vals["B"], source="RGB")
         elif name in ("C", "M", "Y", "K"):
             r, g, b = cmyk_to_rgb(vals["C"], vals["M"], vals["Y"], vals["K"])
-            self.update_all_from_rgb(r, g, b)
+            self.update_from_rgb(r, g, b, source="CMYK")
         elif name in ("H", "S", "V"):
             r, g, b = hsv_to_rgb(vals["H"], vals["S"], vals["V"])
-            self.update_all_from_rgb(r, g, b)
+            self.update_from_rgb(r, g, b, source="HSV")
 
-    def update_all_from_rgb(self, r, g, b):
+    def update_from_rgb(self, r, g, b, source):
         self.updating = True
 
         self.r, self.g, self.b = int(r), int(g), int(b)
 
-        self.vars["R"].setValue(self.r)
-        self.vars["G"].setValue(self.g)
-        self.vars["B"].setValue(self.b)
+        if source != "RGB":
+            self.vars["R"].setValue(self.r)
+            self.vars["G"].setValue(self.g)
+            self.vars["B"].setValue(self.b)
 
-        c, m, y, k = rgb_to_cmyk(self.r, self.g, self.b)
-        self.vars["C"].setValue(c)
-        self.vars["M"].setValue(m)
-        self.vars["Y"].setValue(y)
-        self.vars["K"].setValue(k)
+        if source != "CMYK":
+            c, m, y, k = rgb_to_cmyk(self.r, self.g, self.b)
+            self.vars["C"].setValue(c)
+            self.vars["M"].setValue(m)
+            self.vars["Y"].setValue(y)
+            self.vars["K"].setValue(k)
 
-        h, s, v = rgb_to_hsv(self.r, self.g, self.b)
-        self.vars["H"].setValue(h)
-        self.vars["S"].setValue(s)
-        self.vars["V"].setValue(v)
+        if source != "HSV":
+            h, s, v = rgb_to_hsv(self.r, self.g, self.b)
+            self.vars["H"].setValue(h)
+            self.vars["S"].setValue(s)
+            self.vars["V"].setValue(v)
 
         hex_color = f"#{self.r:02X}{self.g:02X}{self.b:02X}"
         self.hex_label.setText(hex_color.upper())
@@ -234,7 +237,8 @@ class ColorApp(QMainWindow):
             QColor(self.r, self.g, self.b), self, "Выберите цвет"
         )
         if color.isValid():
-            self.update_all_from_rgb(color.red(), color.green(), color.blue())
+            self.update_from_rgb(color.red(), color.green(), color.blue(),
+                                 source="RGB")
 
     def copy_hex(self):
         QApplication.clipboard().setText(self.hex_label.text())
