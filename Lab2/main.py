@@ -93,17 +93,50 @@ class ImageProcessorApp(ctk.CTk):
         self.processed_img = cv2.cvtColor(binary, cv2.COLOR_GRAY2BGR)
         self.update_images()
 
+        
     def save_image(self):
         if self.processed_img is None:
             messagebox.showwarning("Ошибка", "Сначала обработайте изображение!")
             return
+            
         file_path = filedialog.asksaveasfilename(
             defaultextension=".png",
             filetypes=[("PNG", "*.png"), ("JPEG", "*.jpg")]
         )
-        if file_path:
-            cv2.imencode(file_path[-4:], self.processed_img)[1].tofile(file_path)
-            messagebox.showinfo("Успех", "Изображение успешно сохранено!")
+        
+        if not file_path:
+            return
+            
+        try:
+            ext = file_path.split('.')[-1].lower()
+            
+            # --- УВЕЛИЧЕНИЕ РАЗРЕШЕНИЯ ---
+            # Берем текущую картинку и увеличиваем её в 4 раза.
+            # cv2.INTER_CUBIC - лучший алгоритм для увеличения (сглаживает зубцы)
+            scale_factor = 4 
+            h, w = self.processed_img.shape[:2]
+            new_dim = (w * scale_factor, h * scale_factor)
+            
+            # Используем интерполяцию для качественного увеличения
+            img_to_save = cv2.resize(self.processed_img, new_dim, interpolation=cv2.INTER_CUBIC)
+            
+            # --- СОХРАНЕНИЕ В МАКСИМАЛЬНОМ КАЧЕСТВЕ ---
+            if ext in ['jpg', 'jpeg']:
+                params = [cv2.IMWRITE_JPEG_QUALITY, 100]
+            elif ext == 'png':
+                params = [cv2.IMWRITE_PNG_COMPRESSION, 0]
+            else:
+                params = []
+
+            success = cv2.imwrite(file_path, img_to_save, params)
+            
+            if success:
+                messagebox.showinfo("Успех", f"Изображение сохранено в разрешении {new_dim[0]}x{new_dim[1]}!")
+            else:
+                messagebox.showerror("Ошибка", "Не удалось сохранить изображение.")
+                
+        except Exception as e:
+            messagebox.showerror("Ошибка", f"Ошибка при сохранении: {e}")
 
     def update_images(self):
         if self.cv_img is not None:
